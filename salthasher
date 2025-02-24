@@ -1,0 +1,29 @@
+import hashlib
+
+# Define input and output files
+input_file = 'repo.txt'
+output_file = 'saltedpasswordlist'
+
+# Define the salt
+salt = "dog"
+
+# Function to hash a salted password using SHA-1
+def hash_password_with_salt(password, salt):
+    salted_password = password + salt  # Append salt to the password
+    return hashlib.sha1(salted_password.encode('utf-8')).hexdigest()
+
+def main():
+    try:
+        with open(input_file, 'r', encoding='utf-8') as infile, open(output_file, 'w', encoding='utf-8') as outfile:
+            for line in infile:
+                password = line.strip()  # Remove whitespace and newlines
+                hashed = hash_password_with_salt(password, salt)
+                outfile.write(f"{hashed}\n")  # Write the salted, hashed password
+        print(f"Hashing complete. Salted hashes saved to '{output_file}'.")
+    except FileNotFoundError:
+        print(f"Error: '{input_file}' not found.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
