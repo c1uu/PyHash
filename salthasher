@@ -2,14 +2,14 @@ import hashlib
 
 # Define input and output files
 input_file = 'repo.txt'
-output_file = 'saltedpasswordlist'
+output_file = 'saltedpasswordlistsha1s+p'
 
 # Define the salt
 salt = "dog"
 
 # Function to hash a salted password using SHA-1
 def hash_password_with_salt(password, salt):
-    salted_password = password + salt  # Append salt to the password
+    salted_password = salt + password  # Append salt to the password
     return hashlib.sha1(salted_password.encode('utf-8')).hexdigest()
 
 def main():

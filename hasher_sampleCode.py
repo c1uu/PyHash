@@ -1,41 +1,60 @@
 import hashlib
-# This module (named hashlib) implements a common interface to different secure hash
-# including SHA1, SHA224, SHA256, SHA384, and SHA512, as well as MD5 algorithm
 
+def md5_hash(data):
+    return hashlib.md5(data.encode('utf-8')).hexdigest()
 
-while True:
+def sha1_hash(data):
+    return hashlib.sha1(data.encode('utf-8')).hexdigest()
 
-    hashvalue = input("* Enter a string to hash:")
+def run_hash_breaker(target_hash, salt, password_file):
+    # List of hashing functions and their combinations to test
+    hash_attempts = [
+        ("SHA1(password + salt) -> MD5", lambda p, s: md5_hash(sha1_hash(p + s))),
+        ("SHA1(salt + password) -> MD5", lambda p, s: md5_hash(sha1_hash(s + p))),
+        ("MD5(password + salt) -> SHA1 -> MD5", lambda p, s: md5_hash(sha1_hash(md5_hash(p + s)))),
+        ("MD5(salt + password) -> SHA1 -> MD5", lambda p, s: md5_hash(sha1_hash(md5_hash(s + p)))),
+        ("MD5(password + salt) -> MD5", lambda p, s: md5_hash(md5_hash(p + s))),
+        ("MD5(salt + password) -> MD5", lambda p, s: md5_hash(md5_hash(s + p))),
+        ("Double SHA1 -> MD5 (password + salt)", lambda p, s: md5_hash(sha1_hash(sha1_hash((p + s))))),
+        ("Double SHA1 -> MD5 (salt + password)", lambda p, s: md5_hash(sha1_hash(sha1_hash((s + p))))),
+        ("Triple MD5 (password + salt)", lambda p, s: md5_hash(md5_hash(md5_hash((p + s))))),
+        ("Triple MD5 (salt + password)", lambda p, s: md5_hash(md5_hash(md5_hash((s + p))))),
+        ("SHA1(password + salt) -> MD5 -> MD5", lambda p, s: md5_hash(md5_hash(sha1_hash(p + s)))),
+        ("SHA1(salt + password) -> MD5 -> MD5", lambda p, s: md5_hash(md5_hash(sha1_hash(s + p)))),
+        ("Double SHA1 -> Double MD5 (password + salt)", lambda p, s: md5_hash(md5_hash(sha1_hash(sha1_hash(p + s))))),
+        ("Double SHA1 -> Double MD5 (salt + password)", lambda p, s: md5_hash(md5_hash(sha1_hash(sha1_hash(s + p))))),
+        ("Salt in middle -> SHA1 -> MD5", lambda p, s: md5_hash(sha1_hash(p[:len(p)//2] + s + p[len(p)//2:]))),
+        ("Repeated salt -> SHA1 -> MD5", lambda p, s: md5_hash(sha1_hash(s + p + s)))
+    ]
 
-    '''
-    1. hashlib.md5(): It returns an utf-8 encoded version of the string
-    2. The bytes() method in Python creates a sequence of bytes from strings or lists of integers
-    3. hexdigest()  returns the digest as a string object containing only hexadecimal 
-        digits. so the hash value is a hexadecimal string.
-    '''
+    # Load passwords from the file
+    try:
+        with open(password_file, 'r') as file:
+            passwords = [line.strip() for line in file.readlines() if line.strip()]
+    except FileNotFoundError:
+        print(f"The file '{password_file}' was not found.")
+        return
 
-    # MD5:
-    hashguess_md5 = hashlib.md5(bytes(hashvalue, 'utf-8'))
-    hashguess_md5 = hashguess_md5.hexdigest()
-    print("MD5: ", hashguess_md5)
+    # Testing each password from the list
+    found = False
+    for password in passwords:
+        salted_password = password + salt  # Only apply the salt to the original password
+        for description, hash_func in hash_attempts:
+            result = hash_func(salted_password, "")  # No additional salting after the first round
+            print(f"Testing {description} with password '{password}': {result}")
+            if result == target_hash:
+                print(f"\nMatch found with password '{password}' using method: {description}")
+                found = True
+                break
+        if found:
+            break
 
-    # sha-1:
-    hashguess_sha1 = hashlib.sha1(bytes(hashvalue, 'utf-8'))
-    hashguess_sha1 = hashguess_sha1.hexdigest()
-    print("sha-1: ", hashguess_sha1)
+    if not found:
+        print("\nNo matching hash found with the tested combinations.")
 
-
-    # sha-224:
-    hashguess_sha224 = hashlib.sha224(bytes(hashvalue, 'utf-8'))
-    hashguess_sha224 = hashguess_sha224.hexdigest()
-    print("sha-224: ", hashguess_sha224)
-
-    # sha-256:
-    hashguess_sha256 = hashlib.sha256(bytes(hashvalue, 'utf-8'))
-    hashguess_sha256 = hashguess_sha256.hexdigest()
-    print("sha-256: ", hashguess_sha256)
-
-    # sha-512:
-    hashguess_sha512 = hashlib.sha512(bytes(hashvalue, 'utf-8'))
-    hashguess_sha512 = hashguess_sha512.hexdigest()
-    print("sha-512: ", hashguess_sha512)
+# Driver function
+if __name__ == "__main__":
+    TARGET_HASH = "8493ec1c2d24df126f1a9753e0311aa4"
+    SALT = "dog"
+    PASSWORD_FILE = "repo.txt"
+    run_hash_breaker(TARGET_HASH, SALT, PASSWORD_FILE)
