@@ -1,0 +1,35 @@
+import hashlib
+
+def hash_string(s, method='md5'):
+    return hashlib.md5(s.encode()).hexdigest()
+
+def generate_variants(word, salt):
+    variants = []
+    for i in range(len(word) + 1):
+        new_word = word[:i] + salt + word[i:]
+        variants.append(new_word)
+    return variants
+
+def find_matching_hash(word, salt, target_hash):
+    variants = generate_variants(word, salt)
+    
+    for variant in variants:
+        h1 = hash_string(variant, 'md5')
+        h2 = hash_string(h1, 'md5')
+        
+        if h2 == target_hash:
+            return variant, h1, h2
+    return None
+
+word = "butterfly"
+salt = "dog"
+target_hash = "8493ec1c2d24df126f1a9753e0311aa4"
+
+result = find_matching_hash(word, salt, target_hash)
+if result:
+    variant, h1, h2 = result
+    print(f"Matching variant: {variant}")
+    print(f"Hash 1 (md5): {h1}")
+    print(f"Final Hash (md5): {h2}")
+else:
+    print("No match found.")
